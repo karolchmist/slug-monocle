@@ -1,0 +1,7 @@
+.history
+dist/*
+target/
+project/boot/
+project/plugins/project/
+
+.idea
