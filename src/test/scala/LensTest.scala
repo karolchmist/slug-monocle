@@ -1,48 +1,59 @@
 import org.specs2.mutable.Specification
 
-
 /**
-  * Lenses for traversing hierarchy of objects. Get, set, modify
+  * Lenses for traversing hierarchy of objects.
   */
 class LensTest extends Specification {
 
   import monocle.macros.Lenses
 
-  @Lenses("_") case class Street(name: String)
-  @Lenses("_") case class Address(street: Street)
-  @Lenses("_") case class Company(address: Address)
-  @Lenses("_") case class Employee(company: Company)
+  @Lenses("_") case class Facture(client: Client, id: String)
+
+  @Lenses("_") case class Client(firstName: String, lastName: String, address: Address)
+
+  @Lenses("_") case class Address(street: Street, city: String)
+
+  @Lenses("_") case class Street(name: String, number: Int)
 
   "Lens" should {
+    val street = Street(name = "rue mercière", number = 23)
+    val address = Address(city = "Lyon", street = street)
+    val client = Client(firstName = "Jean", lastName = "Dutronc", address = address)
+    val facture = Facture(id = "321", client = client)
 
-    val street = Street(name = "rue Lavoisier")
-    val address = Address(street = street)
-    val company = Company(address = address)
+    def toCamelCase(s: String): String =
+      s.split(" ")
+        .map(w => w.head.toUpper + w.tail)
+        .mkString(" ")
 
     "get" in {
-      Street._name.get(street) ==== "rue Lavoisier"
+      Street._name.get(street) ==== "rue mercière"
     }
     "set" in {
-      Street._name.set("rue Maronier")(street) ==== Street("rue Maronier")
+      val newName: String = "Saint Etienne"
+      Street._name.set(newName)(street) ==== street.copy(name = newName)
+    }
+    "modify" in {
+      Client._lastName.modify(_.toUpperCase)(client) ==== client.copy(lastName = client.lastName.toUpperCase)
     }
     "composition + modify" in {
-      val newAddress: Address = (Address._street composeLens Street._name).modify(_.toUpperCase)(address)
-      newAddress ==== Address(Street("RUE LAVOISIER"))
+      // false negative compilation error in idea...
+      val newAddress: Facture = (Facture._client composeLens Client._address composeLens Address._street composeLens Street._name).modify(toCamelCase)(facture)
+      newAddress.client.address.street.name ==== "Rue Mercière"
 
-      val newAddress2: Address = (Address._street ^|-> Street._name).modify(_.toUpperCase)(address)
-      newAddress2 ==== Address(Street("RUE LAVOISIER"))
+      // the same with DSL symbols
+      val newAddress2: Facture = (Facture._client ^|-> Client._address ^|-> Address._street ^|-> Street._name).modify(toCamelCase)(facture)
+      newAddress2.client.address.street.name ==== "Rue Mercière"
     }
-    "lift" in {
-//      import monocle.std.all
-//      import monocle.std.list._
-//      import monocle.function.all
-      // FIXME why necessary?
+    "modifyF aka lift" in {
+      // to get Functor[List] instance
       import scalaz.std.list._
 
-      val address1: Address = Address(Street("Rue Maronier"))
+      val addresses: Address = Address(Street("rue Maronier", 33), "Lyon")
 
-      val newAddress: List[Address] = (Address._street composeLens Street._name).modifyF(n => List(n.toLowerCase, n.toUpperCase))(address1)
-      newAddress ==== List(Address(Street("rue maronier")), Address(Street("RUE MARONIER")))
+      // false negative compilation error in idea...
+      val neighbours = (Address._street composeLens Street._number).modifyF(n => List(n - 1, n + 1))(addresses)
+      neighbours ==== List(Address(Street("rue Maronier", 32), "Lyon"), Address(Street("rue Maronier", 34), "Lyon"))
     }
   }
 }

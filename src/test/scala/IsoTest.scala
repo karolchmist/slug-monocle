@@ -19,12 +19,13 @@ class IsoTest extends Specification {
 
     "get" in {
       kilogramToPound.get(Kilogram(23)) ==== Pound(50.70632030252184)
+      kilogramToPound.reverseGet(Pound(50.70632030252184)) ==== Kilogram(23)
     }
 
     case class Stone(v: Double)
 
     val stoneToPound = Iso[Stone, Pound](
-      get = s => Pound(s.v * 14)) (
+      get = s => Pound(s.v * 14))(
       reverseGet = p => Stone(p.v / 14)
     )
 
