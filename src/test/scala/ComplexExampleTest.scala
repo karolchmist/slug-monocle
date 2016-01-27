@@ -1,5 +1,6 @@
 import java.time.{Year, Duration}
 
+import monocle.{POptional, Lens, Optional, Traversal}
 import org.specs2.mutable.Specification
 
 /**
@@ -21,19 +22,35 @@ class ComplexExampleTest extends Specification {
     val album = Album(title = "Thriller", songs = List(song01, song02), year = Year.of(1982))
     val artist = Artist(name = "Michael Jackson", albums = List(album))
 
-    "composition + index + set" in {
+    "index + set" in {
       import monocle.function.Index.index
       import monocle.std.list.listIndex
 
       album.songs(1).singleReleaseYear ==== None
 
-      val updatedAlbum = (Album._songs composeOptional index(1) composeLens Song._singleReleaseYear).set(Some(Year.of(1983)))(album)
+      val optionalAlbumToSecondSongYear: Optional[Album, Option[Year]] = Album._songs composeOptional index(1) composeLens Song._singleReleaseYear
+
+      val updatedAlbum = optionalAlbumToSecondSongYear.set(Some(Year.of(1983)))(album)
 
       album.songs(1).singleReleaseYear ==== None
       updatedAlbum.songs(1).singleReleaseYear.map(_.getValue) ==== Some(1983)
     }
 
-    "composition + fold" in {
+    "traversal + modify" in {
+      import monocle.function.Each.each
+      import monocle.std.list.listEach
+
+      val traversalAlbumToSongsLength: Traversal[Album, Duration] = Album._songs composeTraversal each composeLens Song._length
+
+      val longerAlbum: Album = traversalAlbumToSongsLength.modify(_.plusMinutes(1))(album)
+
+      longerAlbum.songs.map(_.length.getSeconds).sum ==== Duration.ofSeconds(570).getSeconds
+
+      // standard
+      album.songs.map(_.length).map(_.plusMinutes(1)).map(_.getSeconds).sum ==== Duration.ofSeconds(570).getSeconds
+    }
+
+    "fold" in {
       import monocle.Iso
       import monocle.function.Each.each
       import monocle.std.list.listEach
@@ -41,7 +58,9 @@ class ComplexExampleTest extends Specification {
 
       val durationToSeconds = Iso[Duration,Long](_.getSeconds)(Duration.ofSeconds)
 
-      val allSongsLength = (Album._songs composeTraversal each composeLens Song._length composeIso durationToSeconds).fold(album)
+      val traversalAlbumToSongsLength: Traversal[Album, Long] = Album._songs composeTraversal each composeLens Song._length composeIso durationToSeconds
+
+      val allSongsLength: Long = traversalAlbumToSongsLength.fold(album)
 
       allSongsLength ==== Duration.ofMinutes(7).plusSeconds(30).getSeconds
 
