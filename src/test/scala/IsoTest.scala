@@ -34,5 +34,9 @@ class IsoTest extends Specification {
       kgToStone.get(Kilogram(23)) ==== Stone(3.621880021608703)
     }
 
+    "should be isomorphic" in {
+      // this should fail...
+      kilogramToPound.get(kilogramToPound.reverseGet(Pound(50.7063203025218400000001))) ==== Pound(50.70632030252184)
+    }
   }
 }
