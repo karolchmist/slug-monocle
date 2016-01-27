@@ -1,3 +1,5 @@
+import monocle.{PLens, Lens}
+import monocle.macros.GenLens
 import org.specs2.mutable.Specification
 
 /**
@@ -37,22 +39,33 @@ class LensTest extends Specification {
       Client._lastName.modify(_.toUpperCase)(client) ==== client.copy(lastName = client.lastName.toUpperCase)
     }
 
+    "creation" in {
+      val _client1: Lens[Facture, Client] = Lens[Facture, Client](_.client)(c => f => f.copy(client = c))
+
+      val _client2: Lens[Facture, Client] = GenLens[Facture](_.client)
+
+      1 ==== 1
+    }
+
     "composition + modify" in {
-      val newFacture: Facture =
+      val lensFactureToStreetName: Lens[Facture, String] =
         (Facture._client
           composeLens Client._address
           composeLens Address._street
           composeLens Street._name)
-          .modify(toCamelCase)(facture)
+
+      val newFacture: Facture = lensFactureToStreetName.modify(toCamelCase)(facture)
 
       newFacture.client.address.street.name ==== "Rue Mercière"
 
-      // the same with DSL symbols
-      val newFacture2: Facture =
+      val lensFactureToStreetnameDSL =
         (Facture._client
           ^|-> Client._address
           ^|-> Address._street
           ^|-> Street._name)
+
+      // the same with DSL symbols
+      val newFacture2: Facture = lensFactureToStreetnameDSL
           .modify(toCamelCase)(facture)
       newFacture2.client.address.street.name ==== "Rue Mercière"
 
@@ -70,9 +83,12 @@ class LensTest extends Specification {
       // to get Functor[List] instance
       import scalaz.std.list.listInstance
 
-      val addresses: Address = Address(Street("rue Maronier", 33), "Lyon")
+      val address: Address = Address(Street("rue Maronier", 33), "Lyon")
 
-      val neighbours = (Address._street composeLens Street._number).modifyF(n => List(n - 1, n + 1))(addresses)
+      val lensAddressToStreetNumber: Lens[Address, Int] =
+        (Address._street composeLens Street._number)
+
+      val neighbours: List[Address] = lensAddressToStreetNumber.modifyF(n => List(n - 1, n + 1))(address)
       neighbours ==== List(Address(Street("rue Maronier", 32), "Lyon"), Address(Street("rue Maronier", 34), "Lyon"))
     }
   }
