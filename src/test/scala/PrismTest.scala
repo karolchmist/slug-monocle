@@ -12,24 +12,21 @@ import scalaz.{-\/, \/-}
 class PrismTest extends Specification {
 
   "Prism" should {
-
     sealed trait Person
     case class Hero(level: Int) extends Person
-    case class NPC(name: String) extends Person
+    case class Enemy(name: String) extends Person
 
     object Character {
       val _hero = GenPrism[Person, Hero]
-      val _npc: Prism[Person, NPC] = GenPrism[Person, NPC]
+      val _enemy: Prism[Person, Enemy] = GenPrism[Person, Enemy]
     }
 
-    // Not using, boring, better show Optional as Lesn + Prism"
-    "work" in pending {
-      Character._hero.getOption(Hero(level = 12)) ==== Some(Hero(level = 12))
-      Character._hero.getOption(NPC(name = "Dupa")) ==== None
+    "work" in {
+      val hero: Person = Hero(level = 12)
+      val enemy: Person = Enemy(name = "Dragon")
 
-      Character._hero.getOrModify(Hero(213)) ==== \/-(Hero(213))
-      Character._hero.getOrModify(NPC(name = "Hhhh")) ==== -\/(NPC("Hhhh"))
+      Character._hero.getOption(hero) ==== Some(Hero(level = 12))
+      Character._hero.getOption(enemy) ==== None
     }
   }
-
 }
