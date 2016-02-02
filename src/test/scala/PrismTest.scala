@@ -2,13 +2,6 @@ import monocle.Prism
 import monocle.macros.GenPrism
 import org.specs2.mutable.Specification
 
-import scalaz.{-\/, \/-}
-
-
-/**
-  * Prism for tests.
-  * TODO BOF better do Optional
-  */
 class PrismTest extends Specification {
 
   "Prism" should {
@@ -21,7 +14,7 @@ class PrismTest extends Specification {
       val _enemy: Prism[Person, Enemy] = GenPrism[Person, Enemy]
     }
 
-    "work" in {
+    "getOption" in {
       val hero: Person = Hero(level = 12)
       val enemy: Person = Enemy(name = "Dragon")
 

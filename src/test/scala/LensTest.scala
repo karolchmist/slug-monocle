@@ -17,6 +17,12 @@ class LensTest extends Specification {
 
   @Lenses("_") case class Street(name: String, number: Int)
 
+  // manual Lens creation
+  object Facture {
+    val _client1: Lens[Facture, Client] = Lens[Facture, Client](_.client)(c => f => f.copy(client = c))
+    val _client2: Lens[Facture, Client] = GenLens[Facture](_.client)
+  }
+
   "Lens" should {
     val street = Street(name = "rue mercière", number = 23)
     val address = Address(city = "Lyon", street = street)
@@ -31,23 +37,17 @@ class LensTest extends Specification {
     "get" in {
       Street._name.get(street) ==== "rue mercière"
     }
+
     "set" in {
       val newName: String = "Saint Etienne"
       Street._name.set(newName)(street) ==== street.copy(name = newName)
     }
+
     "modify" in {
       Client._lastName.modify(_.toUpperCase)(client) ==== client.copy(lastName = client.lastName.toUpperCase)
     }
 
-    "creation" in {
-      val _client1: Lens[Facture, Client] = Lens[Facture, Client](_.client)(c => f => f.copy(client = c))
-
-      val _client2: Lens[Facture, Client] = GenLens[Facture](_.client)
-
-      1 ==== 1
-    }
-
-    "composition + modify" in {
+    "compose + modify" in {
       val lensFactureToStreetName: Lens[Facture, String] =
         (Facture._client
           composeLens Client._address
@@ -58,13 +58,13 @@ class LensTest extends Specification {
 
       newFacture.client.address.street.name ==== "Rue Mercière"
 
+      // the same with DSL symbols
       val lensFactureToStreetnameDSL =
         (Facture._client
           ^|-> Client._address
           ^|-> Address._street
           ^|-> Street._name)
 
-      // the same with DSL symbols
       val newFacture2: Facture = lensFactureToStreetnameDSL
           .modify(toCamelCase)(facture)
       newFacture2.client.address.street.name ==== "Rue Mercière"
