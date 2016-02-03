@@ -1,22 +1,22 @@
-import monocle.Prism
-import monocle.macros.GenPrism
+import monocle._
+import monocle.macros.{GenLens, GenPrism}
 import org.specs2.mutable.Specification
 
 class PrismTest extends Specification {
 
   "Prism" should {
-    sealed trait Person
-    case class Hero(level: Int) extends Person
-    case class Enemy(name: String) extends Person
+    sealed trait Character
+    case class Hero(level: Int, name: String = "Nameless") extends Character
+    case class Enemy(name: String) extends Character
 
     object Character {
-      val _hero = GenPrism[Person, Hero]
-      val _enemy: Prism[Person, Enemy] = GenPrism[Person, Enemy]
+      val _hero = GenPrism[Character, Hero]
+      val _enemy: Prism[Character, Enemy] = GenPrism[Character, Enemy]
     }
 
     "getOption" in {
-      val hero: Person = Hero(level = 12)
-      val enemy: Person = Enemy(name = "Dragon")
+      val hero: Character = Hero(level = 12)
+      val enemy: Character = Enemy(name = "Dragon")
 
       Character._hero.getOption(hero) ==== Some(Hero(level = 12))
       Character._hero.getOption(enemy) ==== None
