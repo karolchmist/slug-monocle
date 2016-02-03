@@ -29,11 +29,6 @@ class LensTest extends Specification {
     val client = Client(firstName = "Jean", lastName = "Dutronc", address = address)
     val facture = Facture(id = "321", client = client)
 
-    def toCamelCase(s: String): String =
-      s.split(" ")
-        .map(w => w.head.toUpper + w.tail)
-        .mkString(" ")
-
     "get" in {
       Street._name.get(street) ==== "rue mercière"
     }
@@ -54,9 +49,9 @@ class LensTest extends Specification {
           composeLens Address._street
           composeLens Street._name)
 
-      val newFacture: Facture = lensFactureToStreetName.modify(toCamelCase)(facture)
+      val newFacture: Facture = lensFactureToStreetName.modify(_.toUpperCase)(facture)
 
-      newFacture.client.address.street.name ==== "Rue Mercière"
+      newFacture.client.address.street.name ==== "RUE MERCIÈRE"
 
       // the same with DSL symbols
       val lensFactureToStreetnameDSL =
@@ -66,17 +61,17 @@ class LensTest extends Specification {
           ^|-> Street._name)
 
       val newFacture2: Facture = lensFactureToStreetnameDSL
-          .modify(toCamelCase)(facture)
-      newFacture2.client.address.street.name ==== "Rue Mercière"
+          .modify(_.toUpperCase)(facture)
+      newFacture2.client.address.street.name ==== "RUE MERCIÈRE"
 
       // standard way....
       val newFacture3 = facture.copy(
         client = facture.client.copy(
           address = facture.client.address.copy(
             street = facture.client.address.street.copy(
-              name = toCamelCase(facture.client.address.street.name)
+              name = facture.client.address.street.name.toUpperCase
             ))))
-      newFacture3.client.address.street.name ==== "Rue Mercière"
+      newFacture3.client.address.street.name ==== "RUE MERCIÈRE"
     }
 
     "modifyF aka lift" in {
